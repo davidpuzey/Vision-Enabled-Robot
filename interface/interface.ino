@@ -24,6 +24,29 @@ void chkCommand() {
   if (Serial.available() <= 0)
     return;
   char cmdChar = Serial.read();
+  int charNo = 0;
+  
+  switch (cmdChar) {
+    case 'p': // Move the platform
+      charNo = 0;
+      // movePlatform(getMoreChars(2));
+      break;
+    case 'u': // Read ultrasonic sensor
+      charNo = 0;
+      break;
+    case 'i': // Read infrared proximity detector
+      charNo = 0;
+      break;
+    case 'm': // Move the robot
+      charNo = 0;
+      break;
+    case 't': // Turn the robot
+      charNo = 0;
+      break;
+    case 'w': // Set the speed of an individual wheel
+      charNo = 0;
+      break;
+  }
   
   Serial.flush(); // Clear out the buffer
 }

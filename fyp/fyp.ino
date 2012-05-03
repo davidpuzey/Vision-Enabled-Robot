@@ -27,7 +27,7 @@ void loop() {
   //    input += Serial.read();
   //}
   //spd = atoi(input);
-  spd = getIntegerFromSerial(spd);
+  spd = 5;//getIntegerFromSerial(spd);
     
   //spd = 90;
   fwd = spd + 90;

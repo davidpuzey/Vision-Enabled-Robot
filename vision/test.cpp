@@ -9,36 +9,29 @@ using namespace std;
 using namespace cv;
 
 int main(int argc, const char** argv) {
-	IplImage* frame;
-	CvCapture* capture;
-	CvSize frameSize;
-	IplImage* hsvFrame;
+	Mat frame, hsvFrame, thresholdFrame; // Frames
+	VideoCapture capture(0); // Open camera 0
 
-	capture;
-	capture = cvCaptureFromCAM( 1 );
-	if (!capture) {
-		printf("Could not capture from camera");
+	if (!capture.isOpened()) {
+		printf("Could not capture from camera.");
 		return 1;
 	}
 	
-	frame = cvQueryFrame(capture);
-	frameSize = cvGetSize(frame);
-	hsvFrame = cvCreateImage(frameSize, IPL_DEPTH_8U, 3);
-	
 	while (true) {
-		frame = cvQueryFrame(capture);
+		capture >> frame;
 		
-		if (!frame) {
+		if (frame.empty()) {
 			printf("Could not get frame.");
 			return 2;
 		}
 		
 		cvtColor(frame, hsvFrame, CV_BGR2HSV);
+		inRange(hsvFrame, Scalar(15, 20, 50), Scalar(50, 100, 150), thresholdFrame);
 		
-		imshow("Window", Mat(hsvFrame));
+		imshow("HSV Image", thresholdFrame);
 		
 		int exit = waitKey(10);
-		if((char)exit == 'e')
+		if((char)exit == 'q')
 			break;
 	}
 	return 0;

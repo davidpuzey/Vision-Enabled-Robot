@@ -21,7 +21,7 @@ const int SERVO_PLATFORM_Y = 11; // The pin for the servo controlling the platfo
 //const int MAX_SPEED = 20; // The maximum speed that the servos can go
 
 Servo wheels[4], platform[2];
-int wheelOffset[4] = {0,0,0,0};
+int wheelOffset[4] = {-20,0,10,0};
 
 void setup() {
     Serial.begin(9600);
@@ -116,7 +116,7 @@ void readIRPD(int* params) {
 void move(int* params) {
   int spd = params[0];
   int time = params[1];
-  spd -= 110; // Tempoarily correct so that the alphabet can be used to select the speed, a being maximum in reverse and z being maximum forward
+  spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(spd,spd,spd,spd);
   Serial.print("Move at speed ");
   Serial.print(spd);
@@ -159,8 +159,8 @@ void wheelSpeed(int* params) {
   int wheel = params[0];
   int spd = params[1];
   int time = params[2];
-  wheel -= 49; // Temporarily correct so that ascii numbers can be used to select a motor
-  spd -= 110; // Tempoarily correct so that the alphabet can be used to select the speed, a being maximum in reverse and z being maximum forward
+  //wheel -= 49; // Temporarily correct so that ascii numbers can be used to select a motor
+  spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeMotorSpeed(wheel, spd);
   Serial.print("Move wheel ");
   Serial.print(wheel);
@@ -213,7 +213,6 @@ void chkCommand() {
     if (maxChars < minChars)
       maxChars = minChars;
     
-    Serial.println(Serial.available());
     int *paramChars = getMoreChars(minChars, maxChars);
     if (minChars > 0 && paramChars == '\0')
       error(ERROR_LT_CHARS); // Not enough characters have been provided for the function

@@ -21,7 +21,7 @@ const int SERVO_PLATFORM_Y = 11; // The pin for the servo controlling the platfo
 //const int MAX_SPEED = 20; // The maximum speed that the servos can go
 
 Servo wheels[4], platform[2];
-int wheelOffset[4] = {-20,0,10,0};
+int wheelOffset[4] = {-35,-5,10,-15};
 
 void setup() {
     Serial.begin(9600);
@@ -137,7 +137,7 @@ void move(int* params) {
 void turn(int* params) {
   int angle = params[0];
   int time = params[1];
-  angle -= 110; // Tempoarily correct so that the alphabet can be used to select the speed, a being maximum in reverse and z being maximum forward
+  angle -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(-angle,angle,-angle,angle);
   Serial.print("Turn ");
   Serial.print(angle);

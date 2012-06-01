@@ -58,17 +58,11 @@ void loop()
 void movePlatform(int *params) {
   int x = params[0];
   int y = params[1];
-  x -= 20;
-  y -= 20;
   if (x >= 0 && x <= 180)
     platform[0].write(x);
   if (y >= 0 && y <= 180)
     platform[1].write(y);
-  Serial.print("Moving platform to (");
-  Serial.print(x);
-  Serial.print(",");
-  Serial.print(y);
-  Serial.println(")");
+  Serial.println("p");
 }
 
 /**
@@ -92,7 +86,7 @@ void readUltrasonic(int* params) {
   echo = pulseIn(ULTRASONIC_ECHO, HIGH, 40000); // Read in the response, shouldn't exceed 36000, so 40000 max wait will be perfectly fine
   distance = echo / 58; // Get the distance in cm
   delay(10); // Ensure there will be at least 10ms before the next pulse
-  Serial.print("Ultrasonic reading: ");
+  Serial.print("u");
   Serial.println(distance);
 }
 
@@ -102,7 +96,7 @@ void readUltrasonic(int* params) {
  *   params (*int) Anything, it doens't matter, it's only here so the serial reading function works properly
  */
 void readIRPD(int* params) { 
-  Serial.println("IRPD reading: 0");
+  Serial.println("i0");
 }
 
 /**
@@ -118,11 +112,7 @@ void move(int* params) {
   int time = params[1];
   spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(spd,spd,spd,spd);
-  Serial.print("Move at speed ");
-  Serial.print(spd);
-  Serial.print(" for ");
-  Serial.print(time);
-  Serial.println(" seconds");
+  Serial.println("m");
 }
 
 /**
@@ -139,11 +129,7 @@ void turn(int* params) {
   int time = params[1];
   angle -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(-angle,angle,-angle,angle);
-  Serial.print("Turn ");
-  Serial.print(angle);
-  Serial.print(" degrees for ");
-  Serial.print(time);
-  Serial.println(" seconds");
+  Serial.println("t");
 }
 
 /**
@@ -162,13 +148,7 @@ void wheelSpeed(int* params) {
   //wheel -= 49; // Temporarily correct so that ascii numbers can be used to select a motor
   spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeMotorSpeed(wheel, spd);
-  Serial.print("Move wheel ");
-  Serial.print(wheel);
-  Serial.print(" at speed ");
-  Serial.print(spd);
-  Serial.print(" for ");
-  Serial.print(time);
-  Serial.println(" seconds");
+  Serial.print("w");
 }
 
 /**
@@ -253,19 +233,21 @@ int *getMoreChars(int minNum, int maxNum) {
  * err_no (int) The error number (it's advisable to use the error constants
  */
 void error(int err_no) {
-  switch (err_no) {
+  Serial.print("e");
+  Serial.println(err_no);
+/*  switch (err_no) {
     case ERROR_NO_CMD:
-      Serial.println("Error: Command doesn't exist.");
+      Serial.println("Command doesn't exist.");
       break;
     case ERROR_LT_CHARS:
-      Serial.println("Error: Not enough characters have been provided for the function.");
+      Serial.println("Not enough characters have been provided for the function.");
       break;
     case ERROR_WHEEL_OUT_OF_RANGE:
-      Serial.println("Error: Selected wheel does not exist.");
+      Serial.println("Selected wheel does not exist.");
       break;
     default:
       Serial.println("Generic error");
-  }
+  }*/
 }
 
 /**

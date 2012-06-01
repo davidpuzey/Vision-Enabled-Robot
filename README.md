@@ -17,4 +17,4 @@ Folders:
              it should work.
 				 *overall.cpp - The combination of control.cpp and ball_detect.cpp
              *rs232.c - The library used to set up serial communication
-            *build_all.sh - A script I took from the opencv examples to quickly compile my code
+             *build_all.sh - A script I took from the opencv examples to quickly compile my code, this needs modifying to include rs232.c in compilation

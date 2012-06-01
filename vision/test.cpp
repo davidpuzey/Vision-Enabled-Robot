@@ -30,13 +30,15 @@ int main(int argc, const char** argv) {
 		cvtColor(frame, hsvFrame, CV_BGR2HSV);
 		inRange(hsvFrame, Scalar(34, 100, 100), Scalar(70, 255, 255), thresholdFrame);
 		
-		Moments moment = moments(thresholdFrame, true);
+		/*Moments moment = moments(thresholdFrame, true);
 		double moment10 = moment.m10;
 		double moment01 = moment.m01;
 		double area = moment.m00;
 		
 		int posx = moment10 / area;
-		int posy = moment01 / area;
+		int posy = moment01 / area;*/
+		// Radius - A=pi*r^2 --- r=sqrt(A/pi)
+		//circle(thresholdFrame, Point(posx,posy), radius, Scalar(255,0,0), 4, 8, 0);
 		
 		imshow("HSV Image", thresholdFrame);
 		//imshow("tmp frame", tmpFrame);

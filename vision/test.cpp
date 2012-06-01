@@ -10,7 +10,7 @@ using namespace cv;
 
 int main(int argc, const char** argv) {
 	Mat frame, hsvFrame, thresholdFrame; // Frames
-	VideoCapture capture(0); // Open camera 0
+	VideoCapture capture(1); // Open camera 0
 
 	if (!capture.isOpened()) {
 		printf("Could not capture from camera.");
@@ -25,10 +25,21 @@ int main(int argc, const char** argv) {
 			return 2;
 		}
 		
+		GaussianBlur(frame, frame, Size(5,5), 1.2, 1.2);
+		//erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV);
-		inRange(hsvFrame, Scalar(15, 20, 50), Scalar(50, 100, 150), thresholdFrame);
+		inRange(hsvFrame, Scalar(34, 100, 100), Scalar(70, 255, 255), thresholdFrame);
+		
+		Moments moment = moments(thresholdFrame, true);
+		double moment10 = moment.m10;
+		double moment01 = moment.m01;
+		double area = moment.m00;
+		
+		int posx = moment10 / area;
+		int posy = moment01 / area;
 		
 		imshow("HSV Image", thresholdFrame);
+		//imshow("tmp frame", tmpFrame);
 		
 		int exit = waitKey(10);
 		if((char)exit == 'q')

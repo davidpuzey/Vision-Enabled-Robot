@@ -19,10 +19,11 @@ int main(int argc, const char** argv) {
 //putText(frame, area, cvPoint(0,0), FONT_HERSHEY_SIMPLEX, 10, 
 
 	int err, bsize=0, platformX=90, platformY=90,
-		cport_nr=0,        /* /dev/ttyS0 (COM1 on windows) */
+		cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];
-	Size frameSize, midpoint, coordOffset, coordChange, offset, servoChange;
+	Size frameSize;
+	Point objectPos, midpoint, offset, servoChange;
 	
 	
 	if(OpenComport(cport_nr, bdrate)) {
@@ -53,36 +54,47 @@ int main(int argc, const char** argv) {
 		}
 		
 		frameSize = Size(frame.cols, frame.rows); // The frame size
-		midpoint = Size(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
+		midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
 		
 		//GaussianBlur(frame, frame, Size(5,5), 1.2, 1.2);
 		//erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
 		inRange(hsvFrame, Scalar(50, 30, 30), Scalar(90, 255, 255), thresholdFrame); // find the object by colour
 		
+		/* moments:
+		 * 	m00 - area
+		 * 	m10 - for working out the X position
+		 * 	m01 - for working out the Y position
+		 */
 		Moments moment = moments(thresholdFrame, true);
-		double moment10 = moment.m10;
-		double moment01 = moment.m01;
 		double area = moment.m00; // determine the area (using centre of gravity)
-		
-		int posx = moment10 / area; // X position of the object
-		int posy = moment01 / area; // Y position of the object
+		objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
 		// Radius - A=pi*r^2 --- r=sqrt(A/pi)
 		int radius = sqrt(area/PI);
 
 		if (area > 50)
-			circle(frame, Point(posx,posy), radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
+			circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 		
-		offset = Size(midpoint.width - posx, midpoint.height - posy); // How much the object is offset from the centre of the image
+		offset = midpoint - objectPos; // How much the object is offset from the centre of the image
 		
-		// TODO improve by not moving if the coordinates are within a certain radius of the centre of the image
-		servoChange = Size((offset.width/frameSize.width)*180, (offset.height/frameSize.height)*180); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
-		platformX += servoChange.width; // Set the new servo x position
-		platformY += servoChange.height; // Set the new servo y position
-		if (platformX < 0) platformX = 0;
-		if (platformX > 180) platformX = 180;
-		if (platformY < 0) platformY = 0;
-		if (platformY > 180) platformY = 180;
+		// TODO Improve by not moving if the coordinates are within a certain radius of the centre of the image
+		// TODO In case the amount required to move is outside the bounds of possibility then turning the whole robot would be a good idea
+		// TODO Think about using pythag to keep within a circle rather than a square:
+		//      offset = offset^2;
+		//      distance = sqrt(offset.x + offset.y);
+		//      if (distance < circleRadius) then coord is within circle
+		//      Need to choose the relevant radius ... perhaps start with 10
+		servoChange = Point((offset.x/frameSize.width)*180, (offset.y/frameSize.height)*180); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
+		if (servoChange.x <  -10 && servoChange.x > 10) {
+			platformX += servoChange.x; // Set the new servo x position
+			if (platformX < 0) platformX = 0;
+			if (platformX > 180) platformX = 180;
+		}
+		if (servoChange.y <  -10 && servoChange.y > 10) {
+			platformY += servoChange.y; // Set the new servo y position
+			if (platformY < 0) platformY = 0;
+			if (platformY > 180) platformY = 180;
+		}
 		buf[0] = 'p'; // platform move command
 		buf[1] = platformX; // x position
 		buf[2] = platformY; // y position

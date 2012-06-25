@@ -22,8 +22,8 @@ int main(int argc, const char** argv) {
 		cport_nr=0,        /* /dev/ttyS0 (COM1 on windows) */
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];
-	Size frameSize, midpoint, coordOffset, coordChange;
-
+	Size frameSize, midpoint, coordOffset, coordChange, offset, servoChange;
+	
 	
 	if(OpenComport(cport_nr, bdrate)) {
 		printf("Can not open comport\n");
@@ -79,6 +79,10 @@ int main(int argc, const char** argv) {
 		servoChange = Size((offset.width/frameSize.width)*180, (offset.height/frameSize.height)*180); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
 		platformX += servoChange.width; // Set the new servo x position
 		platformY += servoChange.height; // Set the new servo y position
+		if (platformX < 0) platformX = 0;
+		if (platformX > 180) platformX = 180;
+		if (platformY < 0) platformY = 0;
+		if (platformY > 180) platformY = 180;
 		buf[0] = 'p'; // platform move command
 		buf[1] = platformX; // x position
 		buf[2] = platformY; // y position

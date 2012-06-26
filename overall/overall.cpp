@@ -13,11 +13,6 @@ using namespace cv;
 const double PI = 3.141592;
 
 int main(int argc, const char** argv) {
-// CvFont font;
-//cvinitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 1.0,1.0,0,1,CV_AA);
-//cvPutText(im, "text here", cvPoint(10,130), &font, cvScalar(255,255,255,0));
-//putText(frame, area, cvPoint(0,0), FONT_HERSHEY_SIMPLEX, 10, 
-
 	int err, bsize=0, platformX=90, platformY=90,
 		cport_nr=1,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
 		bdrate=9600;       /* 9600 baud */

@@ -19,11 +19,12 @@ int main(int argc, const char** argv) {
 //putText(frame, area, cvPoint(0,0), FONT_HERSHEY_SIMPLEX, 10, 
 
 	int err, bsize=0, platformX=90, platformY=90,
-		cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
+		cport_nr=1,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];
 	Size frameSize;
 	Point objectPos, midpoint, offset, servoChange;
+	stringstream textCoords;
 	
 	
 	if(OpenComport(cport_nr, bdrate)) {
@@ -59,7 +60,7 @@ int main(int argc, const char** argv) {
 		//GaussianBlur(frame, frame, Size(5,5), 1.2, 1.2);
 		//erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
-		inRange(hsvFrame, Scalar(50, 30, 30), Scalar(90, 255, 255), thresholdFrame); // find the object by colour
+		inRange(hsvFrame, Scalar(85, 30, 30), Scalar(90, 255, 255), thresholdFrame); // find the object by colour
 		
 		/* moments:
 		 * 	m00 - area
@@ -71,11 +72,15 @@ int main(int argc, const char** argv) {
 		objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
 		// Radius - A=pi*r^2 --- r=sqrt(A/pi)
 		int radius = sqrt(area/PI);
-
+		
 		if (area > 50)
 			circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 		
 		offset = midpoint - objectPos; // How much the object is offset from the centre of the image
+		
+		textCoords.str("");
+		textCoords << "Coords (" << offset.x << "," << offset.y << ")";
+		putText(frame, textCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		
 		// TODO Improve by not moving if the coordinates are within a certain radius of the centre of the image
 		// TODO In case the amount required to move is outside the bounds of possibility then turning the whole robot would be a good idea

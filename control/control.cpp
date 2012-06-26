@@ -6,7 +6,7 @@
 
 int main(int argc, const char** argv) {
 	int err, bsize=0,
-		cport_nr=0,        /* /dev/ttyS0 (COM1 on windows) */
+		cport_nr=0,        /* 0 is ACM0 and 1 is ACM1*/
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];
 	char command = argv[1][0];

@@ -84,6 +84,10 @@ int main(int argc, const char** argv) {
 		//      distance = sqrt(offset.x + offset.y);
 		//      if (distance < circleRadius) then coord is within circle
 		//      Need to choose the relevant radius ... perhaps start with 10
+		// TODO Work out a the actual relevant coordinates to move too, as currently this isn't even remotely correct, it will overshoot massively
+		//      The simplest way to do this is probably to move the platform 1 degree at a time ... however this isn't too efficient so need to work out a better method.
+		//      TODO Measure the number of degress required to get the ball from one side of the screen to the other TODO
+		//      Then use this to adjust the offset so that the offset is in degrees rather than pixels.
 		servoChange = Point((offset.x/frameSize.width)*180, (offset.y/frameSize.height)*180); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
 		if (servoChange.x <  -10 && servoChange.x > 10) {
 			platformX += servoChange.x; // Set the new servo x position

@@ -15,10 +15,11 @@ int main(int argc, const char** argv) {
 // CvFont font;
 //cvinitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 1.0,1.0,0,1,CV_AA);
 //cvPutText(im, "text here", cvPoint(10,130), &font, cvScalar(255,255,255,0));
-//putText(frame, area, cvPoint(0,0), FONT_HERSHEY_SIMPLEX, 10, Scalar(255,255,255));
+//putText(frame, "Some text", Point(0,50), FONT_HERSHEY_SIMPLEX, 2, Scalar:all(255), 3);
 
 	Mat frame, hsvFrame, thresholdFrame; // Frames
 	VideoCapture capture(1); // Open camera 0
+	stringstream dimensions;
 
 	if (!capture.isOpened()) {
 		printf("Could not capture from camera.");
@@ -36,7 +37,7 @@ int main(int argc, const char** argv) {
 		//GaussianBlur(frame, frame, Size(5,5), 1.2, 1.2);
 		//erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV);
-		inRange(hsvFrame, Scalar(50, 30, 30), Scalar(90, 255, 255), thresholdFrame);
+		inRange(hsvFrame, Scalar(85, 30, 30), Scalar(90, 255, 255), thresholdFrame);
 		
 		Moments moment = moments(thresholdFrame, true);
 		double moment10 = moment.m10;
@@ -47,6 +48,9 @@ int main(int argc, const char** argv) {
 		int posy = moment01 / area;
 		// Radius - A=pi*r^2 --- r=sqrt(A/pi)
 		int radius = sqrt(area/PI);
+		dimensions.str("");
+		dimensions << "Coords (" << posx << "," << posy << ")";
+		putText(frame, dimensions.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.7, Scalar::all(255));
 
 		if (area > 50)
 			circle(frame, Point(posx,posy), radius, Scalar(100,50,0), 4, 8, 0);

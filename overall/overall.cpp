@@ -14,7 +14,7 @@ const double PI = 3.141592;
 
 int main(int argc, const char** argv) {
 	int err, bsize=0, platformX=90, platformY=90,
-		cport_nr=1,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
+		cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];
 	Size frameSize;
@@ -52,10 +52,12 @@ int main(int argc, const char** argv) {
 		frameSize = Size(frame.cols, frame.rows); // The frame size
 		midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
 		
-		//GaussianBlur(frame, frame, Size(5,5), 1.2, 1.2);
+		GaussianBlur(frame, frame, Size(1,1), 0.5, 0.5);
+		//GaussianBlur(frame, frame, Size(3,3), 1.2, 1.2);
 		//erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
-		inRange(hsvFrame, Scalar(85, 30, 30), Scalar(90, 255, 255), thresholdFrame); // find the object by colour
+		inRange(hsvFrame, Scalar(70, 160, 50), Scalar(100, 255, 255), thresholdFrame); // find the object by colour
+		GaussianBlur(thresholdFrame, thresholdFrame, Size(9,9), 1.2, 1.2);
 		
 		/* moments:
 		 * 	m00 - area
@@ -104,8 +106,8 @@ int main(int argc, const char** argv) {
 		buf[2] = platformY; // y position
 		SendBuf(cport_nr, buf, 3); // Send the command
 		
-		imshow("Detected Ball", frame); // display the image
-		//imshow("tmp frame", tmpFrame);
+		imshow("hsv frame", hsvFrame);
+		imshow("Detected Ball", thresholdFrame); // display the image
 		
 		int exit = waitKey(10);
 		if((char)exit == 'q')

@@ -52,12 +52,14 @@ int main(int argc, const char** argv) {
 		frameSize = Size(frame.cols, frame.rows); // The frame size
 		midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
 		
-		GaussianBlur(frame, frame, Size(1,1), 0.5, 0.5);
-		//GaussianBlur(frame, frame, Size(3,3), 1.2, 1.2);
-		//erode(frame, frame, Mat());
+		//GaussianBlur(frame, frame, Size(1,1), 0.5, 0.5);
+		GaussianBlur(frame, frame, Size(3,3), 1.2, 1.2);
+		erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
 		inRange(hsvFrame, Scalar(70, 160, 50), Scalar(100, 255, 255), thresholdFrame); // find the object by colour
 		GaussianBlur(thresholdFrame, thresholdFrame, Size(9,9), 1.2, 1.2);
+		//vector<Vec3f> circles;
+		//HoughCircles(thresholdFrame, circles, CV_HOUGH_GRADIENT, 2); // TODO find the final parameter, the minimum distance between circles
 		
 		/* moments:
 		 * 	m00 - area

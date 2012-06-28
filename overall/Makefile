@@ -1,16 +1,22 @@
-CC=g++
-CFLAGS=-ggdb -Wall `pkg-config --cflags opencv`
-DEPS=rs232.c
-LIBS=`pkg-config --libs opencv`
+PACKAGE=overall
+CFLAGS=-Wall
+LDFLAGS=-ggdb -Wall `pkg-config --cflags opencv`
+LDLIBS=`pkg-config --libs opencv`
+OBJECTS=rs232.o
 
-all: rs232.o
-	g++ $(CFLAGS) overall.cpp rs232.o $(LIBS) -o overall
+all: $(PACKAGE)
 
-rs232.o: rs232.c rs232.h
-	g -c -Wall rs232.c
+$(PACKAGE): $(OBJECTS)
+
+rs232.o: rs232.h
+
+.PHONY: run clean cleanall
+
+run: all
+	./$(PACKAGE)
 
 clean:
-	rm -rf *.o
+	-rm $(OBJECTS)
 
-cleanall:
-	rm -rf *.o overall
+cleanall: clean
+	-rm $(PACKAGE)

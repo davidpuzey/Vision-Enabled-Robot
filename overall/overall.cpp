@@ -15,11 +15,12 @@ const double PI = 3.141592;
 // TODO Add error handling stuffs
 int main(int argc, const char** argv) {
 	int cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
-		bdrate=9600;       /* 9600 baud */
-	unsigned char buf[4096];
+		bdrate=9600,       /* 9600 baud */
+		retChars;
+	unsigned char buf[4096], retBuf[4096];
 	Size frameSize;
 	Point objectPos, midpoint, offset, servoChange, platform(90,90);
-	stringstream textCoords;
+	stringstream textCoords, serialRet;
 	
 	
 	if(OpenComport(cport_nr, bdrate)) {
@@ -116,8 +117,13 @@ int main(int argc, const char** argv) {
 			buf[0] = 'p'; // platform move command
 			buf[1] = platform.x; // x position
 			buf[2] = platform.y; // y position
-			//SendBuf(cport_nr, buf, 3); // Send the command
+			SendBuf(cport_nr, buf, 3); // Send the command
 		}
+
+		retChars = PollComport(cport_nr, retBuf, 4096);
+		if (retChars > 0)
+			serialRet << retBuf;
+		putText(frame, serialRet.str(), Point(0,40), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		
 		imshow("hsv frame", hsvFrame);
 		imshow("Detected Ball", thresholdFrame); // display the image

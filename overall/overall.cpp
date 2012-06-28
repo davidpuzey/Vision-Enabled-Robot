@@ -12,8 +12,9 @@ using namespace cv;
 
 const double PI = 3.141592;
 
+// TODO Add error handling stuffs
 int main(int argc, const char** argv) {
-	int err, bsize=0, platformX=90, platformY=90,
+	int platformX=90, platformY=90,
 		cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
 		bdrate=9600;       /* 9600 baud */
 	unsigned char buf[4096];

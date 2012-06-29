@@ -8,6 +8,9 @@ all: $(PACKAGE)
 
 $(PACKAGE): $(OBJECTS)
 
+serial: rs232.o
+	g++ -Wall -ggdb -o serialReceive serialReceive.cpp rs232.o
+
 rs232.o: rs232.h
 
 .PHONY: run clean cleanall

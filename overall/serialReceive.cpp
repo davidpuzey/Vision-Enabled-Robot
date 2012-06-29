@@ -1,22 +1,14 @@
 #include "rs232.h"
 
 #include <iostream>
-#include <stdio.h>
-#include <cmath>
+#include <pthread.h>
 
 using namespace std;
 unsigned char buf[4096];
+int cport_nr=0;
 
-int main(int argc, const char** argv) {
-	int cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
-		bdrate=9600,       /* 9600 baud */
-		n, i;
-	
-	if(OpenComport(cport_nr, bdrate)) {
-		printf("Can not open comport\n");
-		return(0);
-	}
-	
+void *ReadSerial(void *param) {
+	int i, n;
 	while (1) {
 		n = PollComport(cport_nr, buf, 4096);
 		if (n > 0) {
@@ -29,4 +21,17 @@ int main(int argc, const char** argv) {
 		}
 		usleep(100000);
 	}
+	return param;
+}
+
+int main(int argc, const char** argv) {
+	int bdrate=9600;       /* baud rate */
+	pthread_t thread_id;
+	
+	if(OpenComport(cport_nr, bdrate)) {
+		printf("Can not open comport\n");
+		return(0);
+	}
+	
+	pthread_create(&thread_id, NULL, ReadSerial, 0);
 }

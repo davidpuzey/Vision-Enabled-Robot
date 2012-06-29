@@ -64,7 +64,7 @@ void movePlatform(int *params) {
     platform[0].write(x);
   if (y >= 0 && y <= 180)
     platform[1].write(y);
-  Serial.println("p");
+  Serial.print("p;");
 }
 
 /**
@@ -89,7 +89,8 @@ void readUltrasonic(int* params) {
   distance = echo / 58; // Get the distance in cm
   delay(10); // Ensure there will be at least 10ms before the next pulse
   Serial.print("u");
-  Serial.println(distance);
+  Serial.print(distance);
+  Serial.print(";");
 }
 
 /**
@@ -98,7 +99,7 @@ void readUltrasonic(int* params) {
  *   params (*int) Anything, it doens't matter, it's only here so the serial reading function works properly
  */
 void readIRPD(int* params) { 
-  Serial.println("i0");
+  Serial.print("i0;");
 }
 
 /**
@@ -114,7 +115,7 @@ void move(int* params) {
   int time = params[1];
   spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(spd,spd,spd,spd);
-  Serial.println("m");
+  Serial.print("m;");
 }
 
 /**
@@ -131,7 +132,7 @@ void turn(int* params) {
   int time = params[1];
   angle -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeAllMotors(-angle,angle,-angle,angle);
-  Serial.println("t");
+  Serial.print("t;");
 }
 
 /**
@@ -150,7 +151,7 @@ void wheelSpeed(int* params) {
   //wheel -= 49; // Temporarily correct so that ascii numbers can be used to select a motor
   spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
   changeMotorSpeed(wheel, spd);
-  Serial.print("w");
+  Serial.print("w;");
 }
 
 /**
@@ -236,19 +237,20 @@ int *getMoreChars(int minNum, int maxNum) {
  */
 void error(int err_no) {
   Serial.print("e");
-  Serial.println(err_no);
+  Serial.print(err_no);
+  Serial.print(";");
 /*  switch (err_no) {
     case ERROR_NO_CMD:
-      Serial.println("Command doesn't exist.");
+      Serial.print("Command doesn't exist.");
       break;
     case ERROR_LT_CHARS:
-      Serial.println("Not enough characters have been provided for the function.");
+      Serial.print("Not enough characters have been provided for the function.");
       break;
     case ERROR_WHEEL_OUT_OF_RANGE:
-      Serial.println("Selected wheel does not exist.");
+      Serial.print("Selected wheel does not exist.");
       break;
     default:
-      Serial.println("Generic error");
+      Serial.print("Generic error");
   }*/
 }
 

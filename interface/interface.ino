@@ -46,7 +46,7 @@ void setup() {
 void loop()
 {
     chkCommand();
-    delay(10);
+    delay(100);
     
 }
 

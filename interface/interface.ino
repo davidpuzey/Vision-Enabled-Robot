@@ -1,5 +1,3 @@
-/* vim: set filetype=cpp: */
-
 #include <Servo.h>
 
 /* Set the error codes */

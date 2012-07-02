@@ -20,6 +20,20 @@ const int SERVO_PLATFORM_Y = 11; // The pin for the servo controlling the platfo
 
 //const int MAX_SPEED = 20; // The maximum speed that the servos can go
 
+void chkCommand();
+void changeAllMotors(int,int,int,int);
+void changeMotorSpeed(int,int);
+void error(int);
+int *getMoreChars(int,int);
+
+// interface functions
+void movePlatform(int*);
+void readUltrasonic(int*);
+void readIRPD(int*);
+void move(int*);
+void turn(int*);
+void wheelSpeed(int*);
+
 Servo wheels[4], platform[2];
 int wheelOffset[4] = {-30,0,15,-15}; //fl,fr,bl,br
 

@@ -105,18 +105,29 @@ int main(int argc, const char** argv) {
 			putText(frame, textCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 			
 			//if (servoChange.x <  -20 || servoChange.x > 20) {
-				platform.x = platform.x - servoChange.x; // Set the new servo x position
+			//	platform.x = platform.x - servoChange.x; // Set the new servo x position
+			/*	if (offset.x > 0)
+					platform.x -= 1;
+				else if (offset.x < 0)
+					platform.x += 1;
 				if (platform.x < 0) platform.x = 0;
 				if (platform.x > 180) platform.x = 180;
 			//}
 			//if (servoChange.y <  -10 || servoChange.y > 10) {
-				platform.y = platform.y + servoChange.y; // Set the new servo y position
+			//	platform.y = platform.y + servoChange.y; // Set the new servo y position
+				if (offset.y < 0)
+					platform.y -= 1;
+				else if (offset.y > 0)
+					platform.y += 1;
 				if (platform.y < 0) platform.y = 0;
 				if (platform.y > 180) platform.y = 180;
 			//}
 			buf[0] = 'p'; // platform move command
 			buf[1] = platform.x; // x position
-			buf[2] = platform.y; // y position
+			buf[2] = platform.y; // y position*/
+			buf[0] = 'o'; // platform move command
+			buf[1] = offset.x; // x position
+			buf[2] = offset.y; // y position
 			SendBuf(cport_nr, buf, 3); // Send the command
 		}
 
@@ -126,12 +137,13 @@ int main(int argc, const char** argv) {
 		putText(frame, serialRet.str(), Point(0,40), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		
 		imshow("hsv frame", hsvFrame);
-		imshow("Detected Ball", thresholdFrame); // display the image
+		imshow("Detected Ball", thresholdFrame);
 		imshow("The Frame", frame);
 		
 		int exit = waitKey(10);
 		if((char)exit == 'q')
 			break;
+		//usleep(250000);
 	}
 	return 0;
 }

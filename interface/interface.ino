@@ -28,6 +28,7 @@ int *getMoreChars(int,int);
 
 // interface functions
 void movePlatform(int*);
+void offsetPlatform(int*);
 void readUltrasonic(int*);
 void readIRPD(int*);
 void move(int*);
@@ -77,6 +78,24 @@ void movePlatform(int *params) {
   if (y >= 0 && y <= 180)
     platform[1].write(y);
   Serial.print("p;");
+}
+
+/**
+ * offsetPlatform - Offset the platform by the ammount given. It will only take the latest offset after the servos have finished updating
+ * Params:
+ *   params (*int) A list of integers:
+ *     x - The amount (in degrees) to offset the X axis by
+ *     y - The amount (in degress) to offset the Y axis by
+ */
+void offsetPlatform(int *params) {
+  int x = params[0];
+  int y = params[1];
+  // TODO Do interrupt stuffs
+  if (x >= 0 && x <= 180)
+    platform[0].write(platform[0].read()+x);
+  if (y >= 0 && y <= 180)
+    platform[1].write(platform[1]/read()+y);
+  Serial.print("o;");
 }
 
 /**
@@ -181,6 +200,10 @@ void chkCommand() {
     case 'p': // Move the platform
       minChars = 2;
       func = movePlatform;
+      break;
+    case 'o': // Move the platform
+      minChars = 2;
+      func = offsetPlatform;
       break;
     case 'u': // Read ultrasonic sensor
       func = readUltrasonic;

@@ -6,21 +6,27 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
+#include <pthread.h>
 
 using namespace std;
 using namespace cv;
 
+void *t_objectPosition(void);
+void *t_serialCommunication(void);
+void *t_platformPosition(void);
+
 const double PI = 3.141592;
+int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
+
 
 // TODO Add error handling stuffs
 int main(int argc, const char** argv) {
-	int cport_nr=0,        /* 0 is Arduino com 0 and 1 is Arduino com 1 */
-		bdrate=9600,       /* 9600 baud */
-		retChars;
-	unsigned char buf[4096], retBuf[4096];
+	int bdrate=9600, // Baud rate 9600
+		 retChars;
 	Size frameSize;
 	Point objectPos, midpoint, offset, servoChange, platform(90,90);
 	stringstream textCoords, serialRet;
+	pthread_t cameraThread, serialThread, platformThread;
 	
 	
 	if(OpenComport(cport_nr, bdrate)) {
@@ -30,17 +36,70 @@ int main(int argc, const char** argv) {
 
 	Mat frame, hsvFrame, thresholdFrame; // Frames
 	VideoCapture capture(1); // Open camera 0
-
-	if (!capture.isOpened()) {
-		printf("Could not capture from camera.");
-		return 1;
-	}
 	
 	// Centre the platform
 	buf[0] = 'p';
 	buf[1] = platform.x;
 	buf[2] = platform.y;
 	SendBuf(cport_nr, buf, 3);
+
+	if (!capture.isOpened()) {
+		printf("Could not capture from camera.");
+		return 1;
+	}
+	
+	if (pthread_create(&cameraThread, NULL, t_objectPosition, NULL) != 0) {
+		printf("Camera thread could not be created.\n");
+		exit(1);
+	}
+	if (pthread_create(&serialThread, NULL, t_serialCommunication, NULL) != 0) {
+		printf("Serial thread could not be createa.d\n");
+		exit(1);
+	}
+	if (pthread_create(&platformThread, NULL, t_platformPosition, NULL) != 0) {
+		printf("Platform thread could not be created.\n");
+		exit(1);
+	}
+	pthread_join(cameraThread, NULL);
+	pthread_join(serialThread, NULL);
+	pthread_join(platformThread, NULL);
+	
+	CloseComport(cport_nr);
+	
+	exit(0);
+}
+
+/**
+ * objectPosition - Thread that uses OpenCV to detect objects from a camera
+ *                  The coordinates of the object are then stored in a global
+ *                  variable which can then be accessed by other threads.
+ */
+void *t_objectPosition() {
+}
+
+/**
+ * serialCommunication - Thread that deals with the serial communication
+ *                       between the computer and the Arduino. It's main task
+ *                       is to repeatedly poll the serial port so check for
+ *                       new serial data from the Arduino TODO>>, it can also
+ *                       send data to the Arduino from other threads ...
+ *                       although I may just leave this up to the other
+ *                       threads, we'll see when it's written <<TODO
+ */
+void *t_serialCommunication() {
+	unsigned char buf[4096], retBuf[4096];
+}
+
+/**
+ * platformPosition - Thread to set the platforms position. The current object
+ *                    offset is checked at regular intervals (somewhere
+ *                    between 100ms and 1000ms) and the platform position is
+ *                    then updated to this new position.
+ */
+void *t_platformPosition() {
+}
+
+void nullFunction() {
 	
 	while (true) {
 		capture >> frame;

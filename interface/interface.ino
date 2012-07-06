@@ -81,7 +81,7 @@ void movePlatform(int *params) {
 }
 
 /**
- * offsetPlatform - Offset the platform by the ammount given. It will only take the latest offset after the servos have finished updating
+ * offsetPlatform - Offset the platform by the amount given.
  * Params:
  *   params (*int) A list of integers:
  *     x - The amount (in degrees) to offset the X axis by
@@ -90,11 +90,10 @@ void movePlatform(int *params) {
 void offsetPlatform(int *params) {
   int x = params[0];
   int y = params[1];
-  // TODO Do interrupt stuffs
   if (x >= 0 && x <= 180)
     platform[0].write(platform[0].read()+x);
   if (y >= 0 && y <= 180)
-    platform[1].write(platform[1]/read()+y);
+    platform[1].write(platform[1].read()+y);
   Serial.print("o;");
 }
 

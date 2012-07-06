@@ -106,7 +106,7 @@ int main(int argc, const char** argv) {
 			
 			//if (servoChange.x <  -20 || servoChange.x > 20) {
 			//	platform.x = platform.x - servoChange.x; // Set the new servo x position
-			/*	if (offset.x > 0)
+				if (offset.x > 0)
 					platform.x -= 1;
 				else if (offset.x < 0)
 					platform.x += 1;
@@ -124,10 +124,10 @@ int main(int argc, const char** argv) {
 			//}
 			buf[0] = 'p'; // platform move command
 			buf[1] = platform.x; // x position
-			buf[2] = platform.y; // y position*/
-			buf[0] = 'o'; // platform move command
+			buf[2] = platform.y; // y position
+			/*buf[0] = 'o'; // platform move command
 			buf[1] = offset.x; // x position
-			buf[2] = offset.y; // y position
+			buf[2] = offset.y; // y position*/
 			SendBuf(cport_nr, buf, 3); // Send the command
 		}
 

@@ -34,7 +34,6 @@ int main(int argc, const char** argv) {
 		return(0);
 	}
 
-	Mat frame, hsvFrame, thresholdFrame; // Frames
 	VideoCapture capture(1); // Open camera 0
 	
 	// Centre the platform
@@ -75,6 +74,52 @@ int main(int argc, const char** argv) {
  *                  variable which can then be accessed by other threads.
  */
 void *t_objectPosition() {
+	Mat frame, hsvFrame, thresholdFrame; // Frames
+	while (true) {
+		capture >> frame;
+		
+		if (frame.empty()) {
+			printf("Could not get frame.");
+			return 2;
+		}
+		
+		frameSize = Size(frame.cols, frame.rows); // The frame size
+		midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
+		
+		//GaussianBlur(frame, frame, Size(1,1), 0.5, 0.5);
+		GaussianBlur(frame, frame, Size(3,3), 1.2, 1.2);
+		erode(frame, frame, Mat());
+		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
+		inRange(hsvFrame, Scalar(70, 160, 50), Scalar(100, 255, 255), thresholdFrame); // find the object by colour
+		GaussianBlur(thresholdFrame, thresholdFrame, Size(9,9), 1.2, 1.2);
+		/*vector<Vec3f> circles;
+		HoughCircles(thresholdFrame, circles, CV_HOUGH_GRADIENT, 2, 10, 200, 100); // TODO find the final parameter, the minimum distance between circles
+		//            (input array   , output , detection method , dp,minDist)
+		for (size_t i = 0; i < circles.size(); i++) {
+			Point centre(cvRound(circles[i][0]), cvRound(circles[i][1]));
+			int tmpRadius = cvRound(circles[i][2]);
+			circle(frame, centre, 3, Scalar(0,255,0), -1, 8, 0);
+			circle(frame, centre, tmpRadius, Scalar(0,0,255), 3, 8, 0);
+		}*/
+		
+		
+		/* moments:
+		 * 	m00 - area
+		 * 	m10 - for working out the X position
+		 * 	m01 - for working out the Y position
+		 */
+		Moments moment = moments(thresholdFrame, true);
+		double area = moment.m00; // determine the area (using centre of gravity)
+		if (area > 0) {
+			objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
+			// Radius - A=pi*r^2 --- r=sqrt(A/pi)
+			int radius = sqrt(area/PI);
+			
+			if (area > 50)
+				circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
+			
+			offset = midpoint - objectPos; // How much the object is offset from the centre of the image
+	}
 }
 
 /**

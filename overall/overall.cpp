@@ -11,21 +11,21 @@
 using namespace std;
 using namespace cv;
 
-void *t_objectPosition(void);
-void *t_serialCommunication(void);
-void *t_platformPosition(void);
+void *t_objectPosition(void*);
+void *t_serialCommunication(void*);
+void *t_platformPosition(void*);
 
 const double PI = 3.141592;
 int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
+Point offset, servoChange, platform(90,90);
+stringstream textCoords, serialRet;
+unsigned char buf[4096];
+bool isRunning = true;
 
 
 // TODO Add error handling stuffs
 int main(int argc, const char** argv) {
-	int bdrate=9600, // Baud rate 9600
-		 retChars;
-	Size frameSize;
-	Point objectPos, midpoint, offset, servoChange, platform(90,90);
-	stringstream textCoords, serialRet;
+	int bdrate=9600; // Baud rate 9600
 	pthread_t cameraThread, serialThread, platformThread;
 	
 	
@@ -34,7 +34,6 @@ int main(int argc, const char** argv) {
 		return(0);
 	}
 
-	VideoCapture capture(1); // Open camera 0
 	
 	// Centre the platform
 	buf[0] = 'p';
@@ -42,11 +41,6 @@ int main(int argc, const char** argv) {
 	buf[2] = platform.y;
 	SendBuf(cport_nr, buf, 3);
 
-	if (!capture.isOpened()) {
-		printf("Could not capture from camera.");
-		return 1;
-	}
-	
 	if (pthread_create(&cameraThread, NULL, t_objectPosition, NULL) != 0) {
 		printf("Camera thread could not be created.\n");
 		exit(1);
@@ -73,18 +67,38 @@ int main(int argc, const char** argv) {
  *                  The coordinates of the object are then stored in a global
  *                  variable which can then be accessed by other threads.
  */
-void *t_objectPosition() {
+void *t_objectPosition(void *param) {
 	Mat frame, hsvFrame, thresholdFrame; // Frames
-	while (true) {
+	Size frameSize;
+	Point objectPos, midpoint;
+	Moments moment;
+	double area;
+	int radius;
+	
+	VideoCapture capture(1); // Open camera 1
+	
+	if (!capture.isOpened()) {
+		printf("Could not capture from camera.");
+		exit(1);
+	}
+	
+	capture >> frame;
+	
+	if (frame.empty()) {
+		printf("Could not get frame.");
+		exit(2);
+	}
+	
+	frameSize = Size(frame.cols, frame.rows); // The frame size
+	midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
+	
+	while (isRunning) {
 		capture >> frame;
 		
 		if (frame.empty()) {
 			printf("Could not get frame.");
-			return 2;
+			exit(2);
 		}
-		
-		frameSize = Size(frame.cols, frame.rows); // The frame size
-		midpoint = Point(frameSize.width / 2, frameSize.height / 2); // The midpoint of the image
 		
 		//GaussianBlur(frame, frame, Size(1,1), 0.5, 0.5);
 		GaussianBlur(frame, frame, Size(3,3), 1.2, 1.2);
@@ -108,18 +122,30 @@ void *t_objectPosition() {
 		 * 	m10 - for working out the X position
 		 * 	m01 - for working out the Y position
 		 */
-		Moments moment = moments(thresholdFrame, true);
-		double area = moment.m00; // determine the area (using centre of gravity)
+		moment = moments(thresholdFrame, true);
+		area = moment.m00; // determine the area (using centre of gravity)
 		if (area > 0) {
 			objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
 			// Radius - A=pi*r^2 --- r=sqrt(A/pi)
-			int radius = sqrt(area/PI);
+			radius = sqrt(area/PI);
 			
 			if (area > 50)
 				circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 			
 			offset = midpoint - objectPos; // How much the object is offset from the centre of the image
+			putText(frame, textCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
+		}
+		
+		putText(frame, serialRet.str(), Point(0,40), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
+		imshow("hsv frame", hsvFrame);
+		imshow("Detected Ball", thresholdFrame);
+		imshow("The Frame", frame);
+		
+		int exit = waitKey(10);
+		if((char)exit == 'q')
+			isRunning = false;
 	}
+	pthread_exit(NULL);
 }
 
 /**
@@ -131,8 +157,19 @@ void *t_objectPosition() {
  *                       although I may just leave this up to the other
  *                       threads, we'll see when it's written <<TODO
  */
-void *t_serialCommunication() {
-	unsigned char buf[4096], retBuf[4096];
+void *t_serialCommunication(void *param) {
+	int retChars;
+	unsigned char retBuf[4096];
+	
+	while (isRunning) {
+		retChars = PollComport(cport_nr, retBuf, 4096);
+		if (retChars > 0) {
+			serialRet << retBuf;
+			printf("%s\n", retBuf);
+		}
+		usleep(100000);
+	}
+	pthread_exit(NULL);
 }
 
 /**
@@ -141,12 +178,58 @@ void *t_serialCommunication() {
  *                    between 100ms and 1000ms) and the platform position is
  *                    then updated to this new position.
  */
-void *t_platformPosition() {
+void *t_platformPosition(void *param) {
+	while (isRunning) {
+		// ~TODO Improve by not moving if the coordinates are within a certain radius of the centre of the image
+		// TODO In case the amount required to move is outside the bounds of possibility then turning the whole robot would be a good idea
+		// TODO Think about using pythag to keep within a circle rather than a square:
+		//      offset = offset^2;
+		//      distance = sqrt(offset.x + offset.y);
+		//      if (distance < circleRadius) then coord is within circle
+		//      Need to choose the relevant radius ... perhaps start with 10
+		// TODO Work out a the actual relevant coordinates to move too, as currently this isn't even remotely correct, it will overshoot massively
+		//      The simplest way to do this is probably to move the platform 1 degree at a time ... however this isn't too efficient so need to work out a better method.
+		//      TODO Measure the number of degress required to get the ball from one side of the screen to the other TODO
+		//      Then use this to adjust the offset so that the offset is in degrees rather than pixels.
+		servoChange = Point(cvRound(offset.x/20), cvRound(offset.y/20)); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
+		
+		textCoords.str("");
+		textCoords << "Coords (" << servoChange.x << "," << servoChange.y << ") (" << platform.x << "," << platform.y << ")";
+		
+		//if (servoChange.x <  -20 || servoChange.x > 20) {
+		//	platform.x = platform.x - servoChange.x; // Set the new servo x position
+			if (servoChange.x > 0)
+				platform.x -= 1;
+			else if (servoChange.x < 0)
+				platform.x += 1;
+			if (platform.x < 0) platform.x = 0;
+			if (platform.x > 180) platform.x = 180;
+		//}
+		//if (servoChange.y <  -10 || servoChange.y > 10) {
+		//	platform.y = platform.y + servoChange.y; // Set the new servo y position
+			if (servoChange.y < 0)
+				platform.y -= 1;
+			else if (servoChange.y > 0)
+				platform.y += 1;
+			if (platform.y < 0) platform.y = 0;
+			if (platform.y > 180) platform.y = 180;
+		//}
+		buf[0] = 'p'; // platform move command
+		buf[1] = platform.x; // x position
+		buf[2] = platform.y; // y position
+		/*buf[0] = 'o'; // platform move command
+		buf[1] = offset.x; // x position
+		buf[2] = offset.y; // y position*/
+		if (servoChange.x != 0 && servoChange.y != 0)
+			SendBuf(cport_nr, buf, 3); // Send the command
+		usleep(100000);
+	}
+	pthread_exit(NULL);
 }
 
 void nullFunction() {
 	
-	while (true) {
+/*	while (true) {
 		capture >> frame;
 		
 		if (frame.empty()) {
@@ -162,7 +245,7 @@ void nullFunction() {
 		erode(frame, frame, Mat());
 		cvtColor(frame, hsvFrame, CV_BGR2HSV); // convert to the hsv colour space for easier detection
 		inRange(hsvFrame, Scalar(70, 160, 50), Scalar(100, 255, 255), thresholdFrame); // find the object by colour
-		GaussianBlur(thresholdFrame, thresholdFrame, Size(9,9), 1.2, 1.2);
+		GaussianBlur(thresholdFrame, thresholdFrame, Size(9,9), 1.2, 1.2);*/
 		/*vector<Vec3f> circles;
 		HoughCircles(thresholdFrame, circles, CV_HOUGH_GRADIENT, 2, 10, 200, 100); // TODO find the final parameter, the minimum distance between circles
 		//            (input array   , output , detection method , dp,minDist)
@@ -179,7 +262,7 @@ void nullFunction() {
 		 * 	m10 - for working out the X position
 		 * 	m01 - for working out the Y position
 		 */
-		Moments moment = moments(thresholdFrame, true);
+/*		Moments moment = moments(thresholdFrame, true);
 		double area = moment.m00; // determine the area (using centre of gravity)
 		if (area > 0) {
 			objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
@@ -190,7 +273,7 @@ void nullFunction() {
 				circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 			
 			offset = midpoint - objectPos; // How much the object is offset from the centre of the image
-			
+*/			
 			// ~TODO Improve by not moving if the coordinates are within a certain radius of the centre of the image
 			// TODO In case the amount required to move is outside the bounds of possibility then turning the whole robot would be a good idea
 			// TODO Think about using pythag to keep within a circle rather than a square:
@@ -202,7 +285,7 @@ void nullFunction() {
 			//      The simplest way to do this is probably to move the platform 1 degree at a time ... however this isn't too efficient so need to work out a better method.
 			//      TODO Measure the number of degress required to get the ball from one side of the screen to the other TODO
 			//      Then use this to adjust the offset so that the offset is in degrees rather than pixels.
-			servoChange = Point(cvRound(offset.x/20), cvRound(offset.y/20)); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
+/*			servoChange = Point(cvRound(offset.x/20), cvRound(offset.y/20)); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
 			
 			textCoords.str("");
 			textCoords << "Coords (" << servoChange.x << "," << servoChange.y << ") (" << platform.x << "," << platform.y << ")";
@@ -229,9 +312,9 @@ void nullFunction() {
 			buf[0] = 'p'; // platform move command
 			buf[1] = platform.x; // x position
 			buf[2] = platform.y; // y position
-			/*buf[0] = 'o'; // platform move command
-			buf[1] = offset.x; // x position
-			buf[2] = offset.y; // y position*/
+			//buf[0] = 'o'; // platform move command
+			//buf[1] = offset.x; // x position
+			//buf[2] = offset.y; // y position
 			SendBuf(cport_nr, buf, 3); // Send the command
 		}
 
@@ -249,5 +332,5 @@ void nullFunction() {
 			break;
 		//usleep(250000);
 	}
-	return 0;
+	return 0;*/
 }

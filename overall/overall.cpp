@@ -22,6 +22,7 @@ int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
 Point offset, servoChange, platform(90,90);
 stringstream textCoords, serialRet;
 bool isRunning = true;
+int radius;
 
 
 // TODO Add error handling stuffs
@@ -76,7 +77,6 @@ void *t_objectPosition(void *param) {
 	Point objectPos, midpoint;
 	Moments moment;
 	double area;
-	int radius;
 	
 	VideoCapture capture(1); // Open camera 1
 	
@@ -242,7 +242,7 @@ void *t_platformPosition(void *param) {
 		servoChange = Point(cvRound(offset.x/20), cvRound(offset.y/20)); // How much to modify the servos by. Determined by scaling the objects offset from the centre onto the 180 degress of the servos
 		
 		textCoords.str("");
-		textCoords << "Coords (" << servoChange.x << "," << servoChange.y << ") (" << platform.x << "," << platform.y << ")";
+		textCoords << "Coords (" << servoChange.x << "," << servoChange.y << ") (" << platform.x << "," << platform.y << ") " << radius;
 		
 		//if (servoChange.x <  -20 || servoChange.x > 20) {
 		//	platform.x = platform.x - servoChange.x; // Set the new servo x position
@@ -262,6 +262,7 @@ void *t_platformPosition(void *param) {
 			if (platform.y < 0) platform.y = 0;
 			if (platform.y > 180) platform.y = 180;
 		//}
+		// TODO>>WORK OUT HOW TO DO TURNING STUFFS!!!!!<<TODO
 		/*buf[0] = 'p'; // platform move command
 		buf[1] = platform.x; // x position
 		buf[2] = platform.y; // y position
@@ -269,17 +270,29 @@ void *t_platformPosition(void *param) {
 		buf[1] = offset.x; // x position
 		buf[2] = offset.y; // y position*/
 		//char buf[2] = {platform.x,platform.y};
-		if (servoChange.x != 0 && servoChange.y != 0)
+		if (servoChange.x != 0 || servoChange.y != 0)
 			serialSend('p', platform.x, platform.y);
+		if (radius > 45)
+			serialSend('m', (int)(90-((radius-45)/2.75)));
+		else if (radius < 35)
+			serialSend('m', (int)(90+((radius/-1.75)+20)));
+		else
+			serialSend('m', 90);
 			//SendBuf(cport_nr, buf, 3); // Send the command
+		/*if (platform.x < 45)
+			serialSend('t', 70);
+		else if(platform.x > 135)
+			serialSend('t', 100);
+		else
+			serialSend('t', 90);*/
 		usleep(100000);
 	}
 	pthread_exit(NULL);
 }
 
-void nullFunction() {
+/*void nullFunction() {
 	
-/*	while (true) {
+	while (true) {
 		capture >> frame;
 		
 		if (frame.empty()) {
@@ -382,5 +395,5 @@ void nullFunction() {
 			break;
 		//usleep(250000);
 	}
-	return 0;*/
-}
+	return 0;
+}*/

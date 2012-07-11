@@ -7,19 +7,20 @@
 #include <stdio.h>
 #include <cmath>
 #include <pthread.h>
+#include <stdarg.h>
 
 using namespace std;
 using namespace cv;
 
 void *t_objectPosition(void*);
-void *t_serialCommunication(void*);
+void *t_serialReceive(void*);
+void serialSend(char, ...);
 void *t_platformPosition(void*);
 
 const double PI = 3.141592;
 int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
 Point offset, servoChange, platform(90,90);
 stringstream textCoords, serialRet;
-unsigned char buf[4096];
 bool isRunning = true;
 
 
@@ -36,16 +37,18 @@ int main(int argc, const char** argv) {
 
 	
 	// Centre the platform
-	buf[0] = 'p';
-	buf[1] = platform.x;
-	buf[2] = platform.y;
-	SendBuf(cport_nr, buf, 3);
+	//buf[0] = 'p';
+	//buf[1] = platform.x;
+	//buf[2] = platform.y;
+	//SendBuf(cport_nr, buf, 3);
+	//char buf[2] = {platform.x,platform.y};
+	serialSend('p', platform.x, platform.y);
 
 	if (pthread_create(&cameraThread, NULL, t_objectPosition, NULL) != 0) {
 		printf("Camera thread could not be created.\n");
 		exit(1);
 	}
-	if (pthread_create(&serialThread, NULL, t_serialCommunication, NULL) != 0) {
+	if (pthread_create(&serialThread, NULL, t_serialReceive, NULL) != 0) {
 		printf("Serial thread could not be createa.d\n");
 		exit(1);
 	}
@@ -63,7 +66,7 @@ int main(int argc, const char** argv) {
 }
 
 /**
- * objectPosition - Thread that uses OpenCV to detect objects from a camera
+ * t_objectPosition - Thread that uses OpenCV to detect objects from a camera
  *                  The coordinates of the object are then stored in a global
  *                  variable which can then be accessed by other threads.
  */
@@ -149,15 +152,15 @@ void *t_objectPosition(void *param) {
 }
 
 /**
- * serialCommunication - Thread that deals with the serial communication
- *                       between the computer and the Arduino. It's main task
- *                       is to repeatedly poll the serial port so check for
- *                       new serial data from the Arduino TODO>>, it can also
- *                       send data to the Arduino from other threads ...
- *                       although I may just leave this up to the other
- *                       threads, we'll see when it's written <<TODO
+ * t_serialReceive - Thread that deals with the serial communication
+ *                   between the computer and the Arduino. It's main task
+ *                   is to repeatedly poll the serial port so check for
+ *                   new serial data from the Arduino TODO>>, it can also
+ *                   send data to the Arduino from other threads ...
+ *                   although I may just leave this up to the other
+ *                   threads, we'll see when it's written <<TODO
  */
-void *t_serialCommunication(void *param) {
+void *t_serialReceive(void *param) {
 	int retChars;
 	unsigned char retBuf[4096];
 	
@@ -165,7 +168,7 @@ void *t_serialCommunication(void *param) {
 		retChars = PollComport(cport_nr, retBuf, 4096);
 		if (retChars > 0) {
 			serialRet << retBuf;
-			printf("%s\n", retBuf);
+			printf("Received: %s\n", retBuf);
 		}
 		usleep(100000);
 	}
@@ -173,10 +176,55 @@ void *t_serialCommunication(void *param) {
 }
 
 /**
- * platformPosition - Thread to set the platforms position. The current object
- *                    offset is checked at regular intervals (somewhere
- *                    between 100ms and 1000ms) and the platform position is
- *                    then updated to this new position.
+ * serialSend - Send serial data to the arduino
+ * Params:
+ *    command (char) The command to send
+ *    ... (char) The rest of the parameters are the parameters for the command
+ */
+void serialSend(char command, ...) {
+	va_list params;
+	va_start(params, command);
+	int len = 0;
+	switch (command) {
+		case 'p':
+			len = 2;
+			break;
+		case 'o':
+			len = 2;
+			break;
+		case 'm':
+			len = 2;
+			break;
+		case 't':
+			len = 2;
+			break;
+		case 'w':
+			len = 3;
+			break;
+		case 'u':
+			break;
+		case 'i':
+			break;
+	}
+	
+	unsigned char buf[len+1]; // So we can concatonate the parameters to the command ready for sending
+	buf[0] = command;
+	printf("Sending: %c ", buf[0]);
+	for (int i=0; i<len; i++) { // Add each of the parameters to the buffer
+		buf[i+1] = va_arg(params, int); // char doesn't work here, but given that it is actually integers that will be passed in I suppose it isn't such an issue
+		printf("%i ", buf[i+1]);
+	}
+	va_end(params);
+	
+	printf("\n");
+	SendBuf(cport_nr, buf, len+1); // Send the command
+}
+
+/**
+ * t_platformPosition - Thread to set the platforms position. The current object
+ *                      offset is checked at regular intervals (somewhere
+ *                      between 100ms and 1000ms) and the platform position is
+ *                      then updated to this new position.
  */
 void *t_platformPosition(void *param) {
 	while (isRunning) {
@@ -214,14 +262,16 @@ void *t_platformPosition(void *param) {
 			if (platform.y < 0) platform.y = 0;
 			if (platform.y > 180) platform.y = 180;
 		//}
-		buf[0] = 'p'; // platform move command
+		/*buf[0] = 'p'; // platform move command
 		buf[1] = platform.x; // x position
 		buf[2] = platform.y; // y position
-		/*buf[0] = 'o'; // platform move command
+		buf[0] = 'o'; // platform move command
 		buf[1] = offset.x; // x position
 		buf[2] = offset.y; // y position*/
+		//char buf[2] = {platform.x,platform.y};
 		if (servoChange.x != 0 && servoChange.y != 0)
-			SendBuf(cport_nr, buf, 3); // Send the command
+			serialSend('p', platform.x, platform.y);
+			//SendBuf(cport_nr, buf, 3); // Send the command
 		usleep(100000);
 	}
 	pthread_exit(NULL);

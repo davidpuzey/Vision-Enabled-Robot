@@ -36,7 +36,7 @@ void turn(int*);
 void wheelSpeed(int*);
 
 Servo wheels[4], platform[2];
-int wheelOffset[4] = {-25,0,20,-10}; //fl,fr,bl,br
+int wheelOffset[4] = {-25,0,17,-10}; //fl,fr,bl,br
 
 void setup() {
     Serial.begin(9600);

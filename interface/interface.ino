@@ -23,6 +23,7 @@ const int SERVO_PLATFORM_Y = 11; // The pin for the servo controlling the platfo
 void chkCommand();
 void changeAllMotors(int,int,int,int);
 void changeMotorSpeed(int,int);
+void updateMotors();
 void error(int);
 int *getMoreChars(int,int);
 
@@ -36,7 +37,8 @@ void turn(int*);
 void wheelSpeed(int*);
 
 Servo wheels[4], platform[2];
-int wheelOffset[4] = {-25,0,17,-10}; //fl,fr,bl,br
+int wheelOffset[4] = {-30,-1,15,-12}; // fl,fr,bl,br
+int spdMove = 0, spdTurn = 0; // Set the initial values for movement and turning speed
 
 void setup() {
     Serial.begin(9600);
@@ -47,13 +49,15 @@ void setup() {
     pinMode(IRPD_RESPONSE, INPUT);
     // We limit the minimum and maximum pulse as the servos will not go any faster for larger or smaller values
     // We also apply an offset to each of the wheels to easier to calibrate them
+	 // TODO Work out whats going wrong, it seems that although the servo range has been reduced the speed range is still about +-20
     wheels[0].attach(SERVO_WHEEL_FRONT_LEFT, (1300 + wheelOffset[0]), (1700 + wheelOffset[0]));
     wheels[1].attach(SERVO_WHEEL_FRONT_RIGHT, (1300 + wheelOffset[1]), (1700 + wheelOffset[1]));
     wheels[2].attach(SERVO_WHEEL_BACK_LEFT, (1300 + wheelOffset[2]), (1700 + wheelOffset[2]));
     wheels[3].attach(SERVO_WHEEL_BACK_RIGHT, (1300 + wheelOffset[3]), (1700 + wheelOffset[3]));
     platform[0].attach(SERVO_PLATFORM_X);
     platform[1].attach(SERVO_PLATFORM_Y);
-    changeAllMotors(0,0,0,0);
+	 updateMotors();
+    //changeAllMotors(0,0,0,0);
 }
 
 void loop()
@@ -143,8 +147,9 @@ void readIRPD(int* params) {
 void move(int* params) {
   int spd = params[0];
   int time = params[1];
-  spd -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
-  changeAllMotors(spd,spd,spd,spd);
+  spdMove = spd - 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
+  updateMotors();
+  //changeAllMotors(spd,spd,spd,spd);
   Serial.print("m;");
 }
 
@@ -160,8 +165,9 @@ void move(int* params) {
 void turn(int* params) {
   int angle = params[0];
   int time = params[1];
-  angle -= 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
-  changeAllMotors(-angle,angle,-angle,angle);
+  spdTurn = angle - 90; // This is pointless since it's just changed back later, but I'm leaving it in for now
+  updateMotors();
+  //changeAllMotors(-angle,angle,-angle,angle);
   Serial.print("t;");
 }
 
@@ -322,4 +328,32 @@ void changeMotorSpeed(int motor, int spd) {
     spd *= -1;
   spd = spd + 90; // Turn the speed into a servo setting
   wheels[motor].write(spd);
+}
+
+/**
+ * updateMotors - Updates the speed of each motor based on the current movement and turning speed
+ *                When there is a positive velocity we reduce the velocity of the servos on the
+ *                side that we wish to turn. So if we wish to rotate right, we reduce the velocity
+ *                of the servos on the right hand side, the servos on the left hand side will be
+ *                pushing the robot forward and it will start turning right.
+ *                If the robot has a negative velocity (ie travelling backwards) we increase the
+ *                velocity of the the opposite side than we wish to turn. So, if we wish to turn
+ *                right we have to increase the velocity of left hand side (slowing it down), this
+ *                means that the right hand servos will be pulling the robot backwards and it will
+ *                turn right.
+ */
+void updateMotors() {
+	int left = spdMove;
+	int right = spdMove;
+	if (spdMove > 0)
+		if (spdTurn < 0) // If the robot is going forwards and wanting to turn left then reduce the speed of the left side
+			left += spdTurn; // spdTurn will be negative to adding it will reduce the speed
+		else if (spdTurn > 0) // If the robot is going forwards and wanting to turn right then reduce the speed of the right side
+			right -= spdTurn; // spdTurn will be positive so normal subtraction here
+	else if (spdMove < 0)
+		if (spdTurn < 0) // If the robot is going backwards and wanting to turn left then reduce speed on the right side
+			right -= spdTurn; // spdMove will be negative and so will the spdTurn so subtraction will result in bringing the speed closer to 0 (-10--10 = -10+10)
+		else if (spdTurn > 0) // If the robot is going backwards and wanting to the turn right then reduce speed on the left hand side
+			left += spdTurn; // spdMove will be negative and spdTurn will be positive so adding then should bring the speed closer to 0
+	changeAllMotors(left, right, left, right);
 }

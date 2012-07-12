@@ -289,15 +289,28 @@ void *t_platformPosition(void *param) {
 /**
  * t_movement - Deals with the robots wheel movement. Turning & velocity etc
  */
-void *t_wheelMovment(void *param) {
+void *t_wheelMovement(void *param) {
 	int newSpdMove = 90;
 	int newSpdTurn = 90;
 	while (isRunning) {
 		// Setting the speed of the robot, forward/backward etc
 		// TODO base this on actual distance from ball not just the radius
 		if (radius > 45)
+			// This translates the radius into a negative velocity, so the robot can pull away from the ball when it is too close.
+			// It ranges from 45 to 100 (thats 55 values, we have 20 speeds so 55/20=2.75)
+			// Since we're moving backwards we want negative velocity so we take away from 90 (0 velocity)
+			// So work out how much we need to take away we bring the radius range down by 45 (since we're only dealing with values over 45, this allows us to work with values from 0 rather than 45)
+			// We then divide this by the 2.75 to translate the 0-55 scale to a 0-20 scale (speed doesn't change beyond +-20 :/)
+			// It is of course important to convert this to an integer as the maths will give us a float
 			newSpdMove = (int)(90-((radius-45)/2.75));
 		else if (radius < 35)
+			// This translates the radius into a positive velocity, so the robot can move towards the ball when it is too far away.
+			// It ranges from 35 to 0 (thats 35 values, we have 20 speeds so 35/20=1.75)
+			// Here we're moving forwards so we want a positive velocity this means we need add to 90 (0 velocity)
+			// Since the range is between 0 and 35 we don't need to bring the scale down
+			// However we need to reverse the sacle, 0-35 should translate to 20-0 (0 radius should be us 20 speed and 35 radius should give us 0 speed)
+			// If it were 0-35 translated to 0-20 we could just do radius/1.75, however for the reverse scale we need to divide by -1.75 and then add 20 (the maximum value in the scale)
+			// Once again we need to convert to an integer for sending to the robot
 			newSpdMove = (int)(90+((radius/-1.75)+20));
 		else
 			newSpdMove = 90;

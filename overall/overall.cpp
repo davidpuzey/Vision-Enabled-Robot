@@ -16,19 +16,22 @@ void *t_objectPosition(void*);
 void *t_serialReceive(void*);
 void serialSend(char, ...);
 void *t_platformPosition(void*);
+void *t_wheelMovement(void*);
 
 const double PI = 3.141592;
 int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
+int spdMove = 90; // Keeping track of the velocity of the robot, start with stationary - TODO Look into sending signed integers ... may already be doing this, ie rather than between 0 & 180 with 90 as the centre, having 0 as the centre and going between -90 and 90
+int spdTurn = 90; // Keeping track of the speed of the robot, start with not at all - TODO See above todo (it applies here too)
+int radius;
+bool isRunning = true;
 Point offset, servoChange, platform(90,90);
 stringstream textCoords, serialRet;
-bool isRunning = true;
-int radius;
 
 
 // TODO Add error handling stuffs
 int main(int argc, const char** argv) {
 	int bdrate=9600; // Baud rate 9600
-	pthread_t cameraThread, serialThread, platformThread;
+	pthread_t cameraThread, serialThread, platformThread, wheelThread;
 	
 	
 	if(OpenComport(cport_nr, bdrate)) {
@@ -57,9 +60,14 @@ int main(int argc, const char** argv) {
 		printf("Platform thread could not be created.\n");
 		exit(1);
 	}
+	if (pthread_create(&wheelThread, NULL, t_wheelMovement, NULL) != 0) {
+		printf("Wheel thread could not be created.\n");
+		exit(1);
+	}
 	pthread_join(cameraThread, NULL);
 	pthread_join(serialThread, NULL);
 	pthread_join(platformThread, NULL);
+	pthread_join(wheelThread, NULL);
 	
 	CloseComport(cport_nr);
 	
@@ -272,20 +280,45 @@ void *t_platformPosition(void *param) {
 		//char buf[2] = {platform.x,platform.y};
 		if (servoChange.x != 0 || servoChange.y != 0)
 			serialSend('p', platform.x, platform.y);
-		if (radius > 45)
-			serialSend('m', (int)(90-((radius-45)/2.75)));
-		else if (radius < 35)
-			serialSend('m', (int)(90+((radius/-1.75)+20)));
-		else
-			serialSend('m', 90);
-			//SendBuf(cport_nr, buf, 3); // Send the command
-		/*if (platform.x < 45)
-			serialSend('t', 70);
-		else if(platform.x > 135)
-			serialSend('t', 100);
-		else
-			serialSend('t', 90);*/
+		
 		usleep(100000);
+	}
+	pthread_exit(NULL);
+}
+
+/**
+ * t_movement - Deals with the robots wheel movement. Turning & velocity etc
+ */
+void *t_wheelMovment(void *param) {
+	int newSpdMove = 90;
+	int newSpdTurn = 90;
+	while (isRunning) {
+		// Setting the speed of the robot, forward/backward etc
+		// TODO base this on actual distance from ball not just the radius
+		if (radius > 45)
+			newSpdMove = (int)(90-((radius-45)/2.75));
+		else if (radius < 35)
+			newSpdMove = (int)(90+((radius/-1.75)+20));
+		else
+			newSpdMove = 90;
+		if (newSpdMove != spdMove) { // Set the new speed only if it isn't already that speed ... no point in transmitting useless data
+			spdMove = newSpdMove;
+			serialSend('m', newSpdMove); // TODO Decide whether using spdMove or newSpdMove would be better here, can't see too much difference atm, but worth thinking about
+
+		}
+		
+		// Turning the robot if the ball moves too far to one side ... maybe even turn to face after a period of the ball being to one side
+		// TODO Set varying degrees of turn speed dependant on how much the platform has turned, ie the more its turned the faster the turn speed
+		if (platform.x < 45)
+			newSpdTurn = 70;
+		else if(platform.x > 135)
+			newSpdTurn = 100;
+		else
+			newSpdTurn = 90;
+		if (newSpdTurn != spdTurn) { // Set the new turn speed only if it isn't already turning at this speed ... no point in sending useless data
+			spdTurn = newSpdTurn;
+			serialSend('t', newSpdTurn); // TODO Decide whether using spdTurn or newSpdTurn would be better here, can't see too much difference atm, but worth thinking about
+		}
 	}
 	pthread_exit(NULL);
 }

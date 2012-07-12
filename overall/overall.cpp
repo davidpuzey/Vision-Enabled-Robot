@@ -321,11 +321,13 @@ void *t_wheelMovement(void *param) {
 		}
 		
 		// Turning the robot if the ball moves too far to one side ... maybe even turn to face after a period of the ball being to one side
-		// TODO Set varying degrees of turn speed dependant on how much the platform has turned, ie the more its turned the faster the turn speed
-		if (platform.x < 45)
-			newSpdTurn = 70;
-		else if(platform.x > 135)
-			newSpdTurn = 100;
+		// TODO Work out a better solution for varying the turning, atm it will probably act seem weird when comparing the robot travelling at a high and low velocity
+		// For the maths see the above explaination for spdMove, it's very similar, except both ranges are scaling 45 to 20 so we are using 2.25 (45/20)
+		// TODO 0-20 may not be the best range here, something more complicated would give better results, however atm this is fine
+		if (platform.x < 45) // Turning right
+			newSpdTurn = (int)(90+((platform.x/-2.25)+20));
+		else if(platform.x > 135) // Turning left
+			newSpdTurn = (int)(90-((platform.x-135)/2.25));
 		else
 			newSpdTurn = 90;
 		if (newSpdTurn != spdTurn) { // Set the new turn speed only if it isn't already turning at this speed ... no point in sending useless data

@@ -345,15 +345,20 @@ void changeMotorSpeed(int motor, int spd) {
 void updateMotors() {
 	int left = spdMove;
 	int right = spdMove;
-	if (spdMove > 0)
+	if (spdMove > 0) // Moving forwards
 		if (spdTurn < 0) // If the robot is going forwards and wanting to turn left then reduce the speed of the left side
 			left += spdTurn; // spdTurn will be negative to adding it will reduce the speed
 		else if (spdTurn > 0) // If the robot is going forwards and wanting to turn right then reduce the speed of the right side
 			right -= spdTurn; // spdTurn will be positive so normal subtraction here
-	else if (spdMove < 0)
+	else if (spdMove < 0) // Moving backwards
 		if (spdTurn < 0) // If the robot is going backwards and wanting to turn left then reduce speed on the right side
 			right -= spdTurn; // spdMove will be negative and so will the spdTurn so subtraction will result in bringing the speed closer to 0 (-10--10 = -10+10)
 		else if (spdTurn > 0) // If the robot is going backwards and wanting to the turn right then reduce speed on the left hand side
 			left += spdTurn; // spdMove will be negative and spdTurn will be positive so adding then should bring the speed closer to 0
+	else { // If spdMove is equal to 0 - ie it's stationary
+		right = spdTurn;
+		left = -spdTurn;
+	}
+
 	changeAllMotors(left, right, left, right);
 }

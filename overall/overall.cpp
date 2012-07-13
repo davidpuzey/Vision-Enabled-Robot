@@ -326,7 +326,7 @@ void *t_wheelMovement(void *param) {
 		// TODO 0-20 may not be the best range here, something more complicated would give better results, however atm this is fine
 		if (platform.x < 45) // Turning right
 			newSpdTurn = (int)(90+((platform.x/-2.25)+20));
-		else if(platform.x > 135) // Turning left
+		else if (platform.x > 135) // Turning left
 			newSpdTurn = (int)(90-((platform.x-135)/2.25));
 		else
 			newSpdTurn = 90;
@@ -334,6 +334,7 @@ void *t_wheelMovement(void *param) {
 			spdTurn = newSpdTurn;
 			serialSend('t', newSpdTurn); // TODO Decide whether using spdTurn or newSpdTurn would be better here, can't see too much difference atm, but worth thinking about
 		}
+		usleep(100000);
 	}
 	pthread_exit(NULL);
 }

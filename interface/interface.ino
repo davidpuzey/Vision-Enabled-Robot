@@ -37,7 +37,7 @@ void turn(int*);
 void wheelSpeed(int*);
 
 Servo wheels[4], platform[2];
-int wheelOffset[4] = {-30,-1,15,-12}; // fl,fr,bl,br
+int wheelOffset[4] = {-28,2,17,-12}; // fl,fr,bl,br
 int spdMove = 0, spdTurn = 0; // Set the initial values for movement and turning speed
 
 void setup() {

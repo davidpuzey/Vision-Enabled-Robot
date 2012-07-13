@@ -12,6 +12,7 @@
 using namespace std;
 using namespace cv;
 
+void onMouse(int, int, int, int, void*);
 void *t_objectPosition(void*);
 void *t_serialReceive(void*);
 void serialSend(char, ...);
@@ -24,7 +25,7 @@ int spdMove = 90; // Keeping track of the velocity of the robot, start with stat
 int spdTurn = 90; // Keeping track of the speed of the robot, start with not at all - TODO See above todo (it applies here too)
 int radius;
 bool isRunning = true;
-Point offset, servoChange, platform(90,90);
+Point offset(0,0), servoChange(0,0), platform(90,90), mouseCoords(0,0);
 stringstream textCoords, serialRet;
 
 
@@ -52,7 +53,7 @@ int main(int argc, const char** argv) {
 		printf("Camera thread could not be created.\n");
 		exit(1);
 	}
-	if (pthread_create(&serialThread, NULL, t_serialReceive, NULL) != 0) {
+/*if (pthread_create(&serialThread, NULL, t_serialReceive, NULL) != 0) {
 		printf("Serial thread could not be createa.d\n");
 		exit(1);
 	}
@@ -63,7 +64,7 @@ int main(int argc, const char** argv) {
 	if (pthread_create(&wheelThread, NULL, t_wheelMovement, NULL) != 0) {
 		printf("Wheel thread could not be created.\n");
 		exit(1);
-	}
+	}*/
 	pthread_join(cameraThread, NULL);
 	pthread_join(serialThread, NULL);
 	pthread_join(platformThread, NULL);
@@ -72,6 +73,15 @@ int main(int argc, const char** argv) {
 	CloseComport(cport_nr);
 	
 	exit(0);
+}
+
+/**
+ * onMouse - Used to set the current x & y coordinates of the mouse over the hsv image
+ */
+void onMouse(int event, int x, int y, int, void*) {
+	if (event != CV_EVENT_MOUSEMOVE)
+		return;
+	mouseCoords = Point(x,y);
 }
 
 /**
@@ -85,6 +95,8 @@ void *t_objectPosition(void *param) {
 	Point objectPos, midpoint;
 	Moments moment;
 	double area;
+	stringstream strArea, strHSVCoords;
+	Vec3b hsvPixel;
 	
 	VideoCapture capture(1); // Open camera 1
 	
@@ -135,19 +147,26 @@ void *t_objectPosition(void *param) {
 		 */
 		moment = moments(thresholdFrame, true);
 		area = moment.m00; // determine the area (using centre of gravity)
-		if (area > 0) {
+		if (area > 200) { // Stop unwanted anomalies, we probably can't do anything if the ball is this far away anyway
 			objectPos = Point(moment.m10 / area, moment.m01 / area); // The X and Y coordinates
 			// Radius - A=pi*r^2 --- r=sqrt(A/pi)
 			radius = sqrt(area/PI);
 			
-			if (area > 50)
-				circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
+			circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 			
 			offset = midpoint - objectPos; // How much the object is offset from the centre of the image
-			putText(frame, textCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		}
 		
+		strArea.str("");
+		strArea << area;
+		setMouseCallback("hsv frame", onMouse);
+		hsvPixel = hsvFrame.at<Vec3b>(mouseCoords.x,mouseCoords.y);
+		strHSVCoords.str("");
+		strHSVCoords << (int)hsvPixel[0] << "," << (int)hsvPixel[1] << "," << (int)hsvPixel[2];
+		putText(frame, textCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		putText(frame, serialRet.str(), Point(0,40), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
+		putText(frame, strArea.str(), Point(0,60), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
+		putText(hsvFrame, strHSVCoords.str(), Point(0,20), FONT_HERSHEY_SIMPLEX, 0.6, Scalar::all(255));
 		imshow("hsv frame", hsvFrame);
 		imshow("Detected Ball", thresholdFrame);
 		imshow("The Frame", frame);
@@ -281,7 +300,7 @@ void *t_platformPosition(void *param) {
 		if (servoChange.x != 0 || servoChange.y != 0)
 			serialSend('p', platform.x, platform.y);
 		
-		usleep(100000);
+		usleep(250000);
 	}
 	pthread_exit(NULL);
 }
@@ -325,9 +344,9 @@ void *t_wheelMovement(void *param) {
 		// For the maths see the above explaination for spdMove, it's very similar, except both ranges are scaling 45 to 20 so we are using 2.25 (45/20)
 		// TODO 0-20 may not be the best range here, something more complicated would give better results, however atm this is fine
 		if (platform.x < 45) // Turning right
-			newSpdTurn = (int)(90+((platform.x/-2.25)+20));
+			newSpdTurn = (int)(90-((platform.x/-2.25)+20));
 		else if (platform.x > 135) // Turning left
-			newSpdTurn = (int)(90-((platform.x-135)/2.25));
+			newSpdTurn = (int)(90+((platform.x-135)/2.25));
 		else
 			newSpdTurn = 90;
 		if (newSpdTurn != spdTurn) { // Set the new turn speed only if it isn't already turning at this speed ... no point in sending useless data

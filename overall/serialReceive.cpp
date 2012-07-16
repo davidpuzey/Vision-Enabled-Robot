@@ -5,7 +5,7 @@
 
 using namespace std;
 unsigned char buf[4096];
-int cport_nr=0;
+int cport_nr=1;
 
 void *ReadSerial(void *param) {
 	int i, n;
@@ -34,4 +34,5 @@ int main(int argc, const char** argv) {
 	}
 	
 	pthread_create(&thread_id, NULL, ReadSerial, 0);
+	pthread_join(thread_id, NULL);
 }

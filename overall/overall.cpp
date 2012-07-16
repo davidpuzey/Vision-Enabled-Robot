@@ -23,7 +23,7 @@ const double PI = 3.141592;
 int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
 int spdMove = 90; // Keeping track of the velocity of the robot, start with stationary - TODO Look into sending signed integers ... may already be doing this, ie rather than between 0 & 180 with 90 as the centre, having 0 as the centre and going between -90 and 90
 int spdTurn = 90; // Keeping track of the speed of the robot, start with not at all - TODO See above todo (it applies here too)
-int radius;
+int radius; // The radius of the ball
 bool isRunning = true;
 Point offset(0,0), servoChange(0,0), platform(90,90), mouseCoords(0,0);
 stringstream textCoords, serialRet;
@@ -155,6 +155,8 @@ void *t_objectPosition(void *param) {
 			circle(frame, objectPos, radius, Scalar(100,50,0), 4, 8, 0); // add a circle around the ball for displaying
 			
 			offset = midpoint - objectPos; // How much the object is offset from the centre of the image
+		} else {
+			offset = Point(0,0);
 		}
 		
 		strArea.str("");

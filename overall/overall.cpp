@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
 		printf("Camera thread could not be created.\n");
 		exit(1);
 	}
-/*if (pthread_create(&serialThread, NULL, t_serialReceive, NULL) != 0) {
+	if (pthread_create(&serialThread, NULL, t_serialReceive, NULL) != 0) {
 		printf("Serial thread could not be createa.d\n");
 		exit(1);
 	}
@@ -64,7 +64,7 @@ int main(int argc, const char** argv) {
 	if (pthread_create(&wheelThread, NULL, t_wheelMovement, NULL) != 0) {
 		printf("Wheel thread could not be created.\n");
 		exit(1);
-	}*/
+	}
 	pthread_join(cameraThread, NULL);
 	pthread_join(serialThread, NULL);
 	pthread_join(platformThread, NULL);
@@ -300,7 +300,7 @@ void *t_platformPosition(void *param) {
 		if (servoChange.x != 0 || servoChange.y != 0)
 			serialSend('p', platform.x, platform.y);
 		
-		usleep(250000);
+		usleep(100000);
 	}
 	pthread_exit(NULL);
 }

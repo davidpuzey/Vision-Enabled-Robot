@@ -13,6 +13,8 @@ using namespace std;
 using namespace cv;
 
 void onMouse(int, int, int, int, void*);
+void semGive(bool &);
+bool semTake(bool &);
 void *t_objectPosition(void*);
 void *t_serialReceive(void*);
 void serialSend(char, ...);
@@ -24,7 +26,9 @@ int cport_nr = 0; // 0 is Arduino com 0 and 1 is Arduino com 1
 int spdMove = 90; // Keeping track of the velocity of the robot, start with stationary - TODO Look into sending signed integers ... may already be doing this, ie rather than between 0 & 180 with 90 as the centre, having 0 as the centre and going between -90 and 90
 int spdTurn = 90; // Keeping track of the speed of the robot, start with not at all - TODO See above todo (it applies here too)
 int radius; // The radius of the ball
-bool isRunning = true;
+bool isRunning = true; // Flag used to ensure that the program is stil running, if set to false then the while loops in the threads will end
+// Flags to determine when the robot has completed the command
+bool isP = true, isM = true, isT = true;
 Point offset(0,0), servoChange(0,0), platform(90,90), mouseCoords(0,0);
 stringstream textCoords, serialRet;
 
@@ -82,6 +86,27 @@ void onMouse(int event, int x, int y, int, void*) {
 	if (event != CV_EVENT_MOUSEMOVE)
 		return;
 	mouseCoords = Point(x,y);
+}
+
+/**
+ * semGive - Poorly simulate semaphores, sets a given boolean value to true;
+ * Params:
+ *    sem - The boolean variable to set
+ */
+void semGive(bool &sem) {
+	sem = true;
+}
+
+/**
+ * semTake - Poorly simulate semaphores, returns the value of the semaphore and sets it to false
+ * Params:
+ *    sem - The boolean variable to get
+ */
+bool semTake(bool &sem) {
+	bool oldSem = sem;
+	sem = false;
+	return true; // As there is a bit of a problem with them at the moment, i'm just gonna pretend like this function doesn't exist TODO fix it
+	return oldSem;
 }
 
 /**
@@ -198,6 +223,17 @@ void *t_serialReceive(void *param) {
 		if (retChars > 0) {
 			serialRet << retBuf;
 			printf("Received: %s\n", retBuf);
+			switch (retBuf[0]) { // Hacky way of doing it, but it'll do for now TODO Make this better, properly seperate out returned commands and process them
+				case 'p':
+					semGive(isP);
+					break;
+				case 'm':
+					semGive(isM);
+					break;
+				case 't':
+					semGive(isT);
+					break;
+			}
 		}
 		usleep(100000);
 	}
@@ -291,7 +327,6 @@ void *t_platformPosition(void *param) {
 			if (platform.y < 0) platform.y = 0;
 			if (platform.y > 180) platform.y = 180;
 		//}
-		// TODO>>WORK OUT HOW TO DO TURNING STUFFS!!!!!<<TODO
 		/*buf[0] = 'p'; // platform move command
 		buf[1] = platform.x; // x position
 		buf[2] = platform.y; // y position
@@ -299,7 +334,7 @@ void *t_platformPosition(void *param) {
 		buf[1] = offset.x; // x position
 		buf[2] = offset.y; // y position*/
 		//char buf[2] = {platform.x,platform.y};
-		if (servoChange.x != 0 || servoChange.y != 0)
+		if ((servoChange.x != 0 || servoChange.y != 0) && semTake(isP))
 			serialSend('p', platform.x, platform.y);
 		
 		usleep(100000);
@@ -335,10 +370,9 @@ void *t_wheelMovement(void *param) {
 			newSpdMove = (int)(90+((radius/-1.75)+20));
 		else
 			newSpdMove = 90;
-		if (newSpdMove != spdMove) { // Set the new speed only if it isn't already that speed ... no point in transmitting useless data
+		if (newSpdMove != spdMove && semTake(isM)) { // Set the new speed only if it isn't already that speed ... no point in transmitting useless data
 			spdMove = newSpdMove;
 			serialSend('m', newSpdMove); // TODO Decide whether using spdMove or newSpdMove would be better here, can't see too much difference atm, but worth thinking about
-
 		}
 		
 		// Turning the robot if the ball moves too far to one side ... maybe even turn to face after a period of the ball being to one side
@@ -351,7 +385,7 @@ void *t_wheelMovement(void *param) {
 			newSpdTurn = (int)(90+((platform.x-135)/2.25));
 		else
 			newSpdTurn = 90;
-		if (newSpdTurn != spdTurn) { // Set the new turn speed only if it isn't already turning at this speed ... no point in sending useless data
+		if (newSpdTurn != spdTurn && semTake(isT)) { // Set the new turn speed only if it isn't already turning at this speed ... no point in sending useless data
 			spdTurn = newSpdTurn;
 			serialSend('t', newSpdTurn); // TODO Decide whether using spdTurn or newSpdTurn would be better here, can't see too much difference atm, but worth thinking about
 		}

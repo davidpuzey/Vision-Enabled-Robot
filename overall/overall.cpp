@@ -324,7 +324,7 @@ void *t_wheelMovement(void *param) {
 			// We then divide this by the 2.75 to translate the 0-55 scale to a 0-20 scale (speed doesn't change beyond +-20 :/)
 			// It is of course important to convert this to an integer as the maths will give us a float
 			newSpdMove = (int)(90-((radius-45)/2.75));
-		else if (radius < 35)
+		else if (radius < 35 && radius > 5) // If the radius gets too small we want to stop moving as it's likely that the ball isn't there
 			// This translates the radius into a positive velocity, so the robot can move towards the ball when it is too far away.
 			// It ranges from 35 to 0 (thats 35 values, we have 20 speeds so 35/20=1.75)
 			// Here we're moving forwards so we want a positive velocity this means we need add to 90 (0 velocity)

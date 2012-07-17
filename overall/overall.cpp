@@ -167,8 +167,8 @@ void *t_objectPosition(void *param) {
 		
 		/* moments:
 		 * 	m00 - area
-		 * 	m10 - for working out the X position
-		 * 	m01 - for working out the Y position
+		 * 	m10 - for working out the X position (CoG)
+		 * 	m01 - for working out the Y position (CoG)
 		 */
 		moment = moments(thresholdFrame, true);
 		area = moment.m00; // determine the area (using centre of gravity)

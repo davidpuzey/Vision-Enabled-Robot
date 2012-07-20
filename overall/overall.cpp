@@ -29,6 +29,7 @@ int radius; // The radius of the ball
 bool isRunning = true; // Flag used to ensure that the program is stil running, if set to false then the while loops in the threads will end
 // Flags to determine when the robot has completed the command
 bool isP = true, isM = true, isT = true;
+int ultrasonicReading = 0; // The current ultrasonic reading
 Point offset(0,0), servoChange(0,0), platform(90,90), mouseCoords(0,0);
 stringstream textCoords, serialRet;
 
@@ -224,14 +225,17 @@ void *t_serialReceive(void *param) {
 			serialRet << retBuf;
 			printf("Received: %s\n", retBuf);
 			switch (retBuf[0]) { // Hacky way of doing it, but it'll do for now TODO Make this better, properly seperate out returned commands and process them
-				case 'p':
+				case 'p': // Platform
 					semGive(isP);
 					break;
-				case 'm':
+				case 'm': // Move
 					semGive(isM);
 					break;
-				case 't':
+				case 't': // Turn
 					semGive(isT);
+					break;
+				case 'u': // Ultrasonic
+					ultrasonicReading = retBuf[1];
 					break;
 			}
 		}
